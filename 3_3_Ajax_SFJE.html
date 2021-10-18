@@ -1,0 +1,274 @@
+<html>
+    <head>
+        <title>3.3. AJAX</title>
+        <link rel="stylesheet" href="style.css">
+        <meta charset="UTF-8"/>
+        <script src="js/jquery-3.6.0.min.js"></script>
+        <script src="js/sorttable.js"></script>
+        <link href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" rel="stylesheet"/>
+        <script src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+        
+        
+    </head>
+    <body>
+
+        <div class="main">
+            <p class="sign" align="center">3.3. AJAX</p>
+            <br>
+            <form class="form1" action="iniciada.php" method="POST" id="form1"><br>
+                <input class="un " type="email" align="center" id="email" placeholder="Correo electronico" required name="email" name="email"><br>
+                <input class="pass" type="password" align="center" placeholder="Contraseña" required name="password" id="password" name="password"><br>
+
+                <div class="buttonsEventsDiv">
+                    <button type="button" class="deleteButton" id="btnSend">Enviar</button>
+                    <button type="button" class="deleteButton" id="btnRegister">Registrar en DB</button>
+                </div>
+              </form>
+
+              <form class="form11" action="iniciada.php" method="POST" id="form11"><br>
+                <input class="un " type="email" align="center" id="id1" placeholder="id" name="id1" readonly><br>
+                <input class="un " type="email" align="center" id="email1" placeholder="Correo electronico" required name="email1" name="email1"><br>
+                <input class="pass" type="password" align="center" placeholder="Contraseña" required name="password1" id="password1" name="password1"><br>
+              </form>
+
+              <div class="buttonsEventsDiv">
+                <button type="button" class="deleteButton" id="btnGenerate">Generar tabla</button>
+                <button type="button" class="deleteButton" id="closeSession">Cerrar sesión</button>
+            </div>
+            <br><br>
+            <div class="form-group">
+                <input type="text" class="un"  id="search" placeholder="Buscar en la tabla">
+            </div>
+
+            <button id="button111" class="deleteButton">Confirmar</button>
+            <div id="div1">tabla:
+                <button id="button" class="deleteButton">Eliminar registro</button>
+                <button id="button11" class="deleteButton">Actualizar registro</button>
+                <table id="usuarios" class="sortable">
+                    <thead>
+                        <tr>
+                            <th><span>Id</span></th>
+                            <th><span>Email</span></th>
+                            <th><span>Password</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody">
+            
+                    </tbody>
+                </table>
+            </div><br>
+
+        </div>
+    </body>
+</html>
+
+<script type="text/javascript">
+const recoveryUser = localStorage.getItem('token_user');
+if (recoveryUser !== null){
+    $('#form1').hide();
+    $('#form11').hide();
+    $('#btnGenerate').show();
+    $('#closeSession').show();
+    $('#usuarios').hide();
+    $('#button').hide();
+    $('#button111').hide();
+    $('#button11').hide();
+}else {
+    $('#usuarios').hide();
+    $('#form11').hide();
+    $('#button').hide();
+    $('#search').hide();
+    $('#btnGenerate').hide();
+    $('#closeSession').hide();
+    $('#button111').hide();
+    $('#button11').hide();
+}
+//http://localhost/actividadAjax/3_3_Ajax_SFJE.html
+</script>
+
+<script>
+    $(document).ready(function(){
+       $('#btnSend').click(function(){
+           var datos = $('#form1').serialize();
+           const email = document.getElementById('email').value;
+           const pass = document.getElementById('password').value;
+           const tokenBase64 = btoa(`${email}:${pass}`);
+           $.ajax({
+               type: "POST",
+               url: "consultar.php",
+               data: datos,
+               beforeSend(request) {
+                    request.setRequestHeader('Authorization', `Bearer ${tokenBase64}`);
+                },
+               success: function(data){
+                   if(data !== '' ){
+                     localStorage.setItem('token_user',tokenBase64);
+                     $('#form1').hide();
+                     $('#btnGenerate').show();
+                     $('#closeSession').show();
+                   }
+               } 
+           });  
+       });
+    });
+</script>
+
+<script>
+    $(document).ready(function(){
+       $('#btnRegister').click(function(){
+           var datos = $('#form1').serialize();
+           $.ajax({
+               type: "POST",
+               url: "registro.php",
+               data: datos,
+               success: function(data){
+                   if(data === '' ){
+                    alert('REGISTRO NO EXITOSO');
+                   }
+               } 
+           });  
+       });
+    });
+</script>
+
+<script>
+    $(document).ready(function(){
+       $('#btnGenerate').click(function(){
+           $.ajax({
+               type: "POST",
+               url: "allFiles.php",
+               dataType: "json",
+               success: function(data){
+
+                let tableBody = document.getElementById('tbody');
+                           
+                for (var key in data) {
+                    $("#usuarios").append('<tr>' + 
+                    '<td class="numero" align="center" style="dislay: none;">' + data[key].id + '</td>'+
+                    '<td align="center" style="dislay: none;">' + data[key].email + '</td>'+
+                    '<td align="center" style="dislay: none;">' + data[key].password + '</td>'+ '</tr>');
+                }
+
+                $('#usuarios').show();
+                $('#button').show();
+                $('#search').show(); 
+                $('#div1').show();
+                $('#button11').show(); //aqui
+                $('#btnGenerate').hide();
+                
+                var table = $('#usuarios').DataTable();
+                var isTableEnable = true;
+                
+                $('#usuarios tbody').on( 'click', 'tr', function () {
+                   
+                    if ( $(this).hasClass('selected')) {
+                     $(this).removeClass('selected');
+                    }else {
+                        table.$('tr.selected').removeClass('selected');
+                        $(this).addClass('selected');
+                    }
+                });
+
+                $('#closeSession').click(function(){
+                    $('#usuarios').hide();
+                    $('#button').hide();
+                    $('#div1').hide();
+                    $('#search').hide();
+                    $('#btnGenerate').hide();
+                    $('#closeSession').hide();
+                    $('#form1').show();
+                    $('#form11').hide();
+                    localStorage.clear();
+
+                    if(isTableEnable != null){
+                        table.clear();
+                        table.destroy();
+                        $('#usuarios tbody').off('click');
+                        isTableEnable = null
+                    }
+                });
+ 
+                 $('#button').click( function () {
+        
+                    const rowToDelete = String(table.row('.selected').data());
+                    var dato = rowToDelete.split(',');
+                    var datoT = dato.shift();
+
+                    $.ajax({
+                        type: "POST",
+                        url: "deleteRegister.php",
+                        data: {id: datoT},
+                        success: function(data){
+                            if(data === 1){
+                                alert('error al borrar usuario');
+                            }else{
+                                table.row('.selected').remove().draw( false );  
+                            }  
+                         } 
+                    }); 
+
+                });
+
+
+                $('#button11').click( function () {
+                    $('#usuarios').hide();
+                    $('#button').hide();
+                    $('#div1').hide();
+                    $('#search').hide();
+                    $('#btnGenerate').hide();
+                    $('#closeSession').hide();
+                    $('#form1').hide();
+                    $('#button111').show();
+                    $('#form11').show();
+
+                    const rowToDelete = String(table.row('.selected').data());
+                    var dato = rowToDelete.split(',');
+                    var datoT = dato[1];
+                    var datoL = dato.pop();
+                    document.getElementById('id1').value = dato.shift();
+                    document.getElementById('email1').value = datoT;
+                    document.getElementById('password1').value = datoL;
+                });
+
+
+    $('#button111').click( function () {
+        var datos = $('#form11').serialize();      
+        $.ajax({
+               type: "POST",
+               url: "updateRegister.php",
+               data: datos,
+               success: function(data){
+                        $('#usuarios').hide();
+                        $('#button').hide();
+                        $('#div1').hide();
+                        $('#search').hide();
+                        $('#btnGenerate').show();
+                        $('#closeSession').show();
+                        $('#form1').hide();
+                        $('#button111').hide();
+                        $('#form11').hide();
+                        table.clear();
+                        table.destroy();
+                        $('#usuarios tbody').off('click');
+               } 
+           }); 
+        
+        });
+    } 
+    });  
+});
+});
+</script>
+<script>
+    $(document).ready(function(){
+        $("#search").keyup(function(){
+            _this = this;
+            $.each($("#usuarios tbody tr"), function() {
+                if($(this).text().toLowerCase().indexOf($(_this).val().toLowerCase()) === -1)
+                $(this).hide();
+                else
+                $(this).show();
+            });
+        });
+    });
+    </script>
